@@ -1,0 +1,22 @@
+<launch>
+  <group ns="drone1">
+    <include file="$(find mavros)/launch/apm.launch">
+      <arg name="fcu_url" value="udp://127.0.0.1:14551@14555"/>
+      <arg name="fcu_protocol" value="v2.0"/>
+    </include>
+  </group>
+
+  <group ns="drone2">
+    <include file="$(find mavros)/launch/apm.launch">
+      <arg name="fcu_url" value="udp://127.0.0.1:14552@14565"/>
+      <arg name="fcu_protocol" value="v2.0"/>
+    </include>
+  </group>
+
+  <group ns="drone3">
+    <include file="$(find mavros)/launch/apm.launch">
+      <arg name="fcu_url" value="udp://127.0.0.1:14553@14575"/>
+      <arg name="fcu_protocol" value="v2.0"/>
+    </include>
+  </group>
+</launch>

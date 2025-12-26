@@ -1,0 +1,9 @@
+<launch>
+
+    <node name="multi_drone_takeoff_node" pkg="multi_drone" type="multi_drone_takeoff_node.py" output="screen" />
+
+    <node name="sleep_node" pkg="multi_drone" type="sleep_node.py" output="screen" />
+
+    <node name="multi_drone_landing_node" pkg="multi_drone" type="multi_drone_landing_node.py" output="screen" />
+
+</launch>
