@@ -38,3 +38,9 @@ models/*
 
 .DS_Store
 Thumbs.db
+
+# Eklenenler
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+*.iml

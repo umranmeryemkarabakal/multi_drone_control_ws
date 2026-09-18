@@ -1,8 +1,20 @@
 # Çoklu İHA Sürü Kontrol Çalışma Alanı (Multi-Drone Swarm Control)
 
-![ROS Noetic](https://img.shields.io/badge/ROS-Noetic-blue)
-![Language](https://img.shields.io/badge/Language-Python%20%7C%20C%2B%2B-green)
-![Simulation](https://img.shields.io/badge/Simulation-Gazebo%20%26%20ArduPilot-orange)
+<p>
+  <img src="https://img.shields.io/badge/ROS%20Noetic-22314E?style=for-the-badge&logo=ros&logoColor=white" alt="ROS Noetic" />
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/MAVROS-1F2A44?style=for-the-badge" alt="MAVROS" />
+  <img src="https://img.shields.io/badge/ArduPilot%20SITL-161B22?style=for-the-badge" alt="ArduPilot SITL" />
+  <img src="https://img.shields.io/badge/Gazebo-F58113?style=for-the-badge" alt="Gazebo" />
+</p>
+
+## 🇬🇧 Overview
+
+A ROS Noetic workspace for leader–follower formation control of three drones with MAVROS, ArduPilot SITL and Gazebo. The swarm layer generates position setpoints instead of raw velocity commands, which keeps the flight controller in charge of the dynamics.
+
+**Quick start:** `roslaunch multi_drone multi_drone_runway.launch`
+
+## 🇹🇷 Proje hakkında
 
 ## 1. Genel Bakış
 
