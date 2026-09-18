@@ -1,4 +1,4 @@
-# Çoklu İHA Sürü Kontrol Çalışma Alanı (Multi-Drone Swarm Control)
+# multi_drone_control_ws
 
 <p>
   <img src="https://img.shields.io/badge/ROS%20Noetic-22314E?style=for-the-badge&logo=ros&logoColor=white" alt="ROS Noetic" />
@@ -10,132 +10,99 @@
 
 ## Overview
 
-A ROS Noetic workspace for leader–follower formation control of three drones with MAVROS, ArduPilot SITL and Gazebo. The swarm layer generates position setpoints instead of raw velocity commands, which keeps the flight controller in charge of the dynamics.
+A ROS Noetic workspace where three drones fly in a leader–follower triangle formation using Gazebo, ArduPilot SITL
+and MAVROS. The formation node sends a position setpoint to each drone instead of raw velocity commands, so
+stabilisation and motor control stay with ArduPilot. The leader's goal can be changed while flying.
 
 **Quick start:** `roslaunch multi_drone multi_drone_runway.launch`
 
 ## Proje hakkında
 
-## 1. Genel Bakış
-
-Bu depo, MAVROS, Gazebo ve ArduPilot kullanılarak geliştirilmiş çoklu İHA sürü kontrolü için bir ROS çalışma alanıdır. Proje, Lider-Takipçi (Leader-Follower) mimarisi ve konum referansı (setpoint) tabanlı kontrol kullanarak birden fazla İHA'nın formasyon halinde navigasyonuna odaklanmaktadır.
-
-Basit hız tabanlı uygulamaların aksine, bu çalışma alanı kontrolcü dinamiklerine uygun (controller-aware) akademik bir tasarım kullanır. Sürü katmanı, düşük seviyeli hız komutları yerine dinamik konum referansları (setpoint) üreterek uçuş kontrolcüsü ile çok daha pürüzsüz bir entegrasyon sağlar.
-
-**Mevcut Durum:** 3 İHA'nın üçgen formasyonunda kararlı kontrolü sağlanmıştır.
-
----
-
-## 2. Sistem Mimarisi
-
-| Katman                                  | Sorumluluk                                                                              |
-| --------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Sürü Katmanı (Swarm Layer)** | Formasyon geometrisi, koordinasyon mantığı, hedef uzayında çarpışma önleme.     |
-| **MAVROS / ArduPilot**            | Stabilizasyon, sapma (yaw) kontrolü, motor karıştırma (mixing), uçuş dinamikleri. |
-
-### Veri Akışı
+Üç drone'un lider–takipçi üçgen formasyonunda uçtuğu bir ROS Noetic çalışma alanı. Gazebo, ArduPilot SITL ve MAVROS
+kullanılır. Formasyon düğümü drone'lara doğrudan hız komutu göndermek yerine her birine bir konum hedefi (setpoint)
+verir; stabilizasyon ve motor kontrolü ArduPilot'ta kalır. Şu an üç drone üçgen formasyonda kararlı uçuyor.
 
 ```mermaid
 graph TD;
-    User["Kullanıcı / Parametre Güncellemeleri"] -->|Hedef Koordinat| SwarmNode;
-    SwarmNode["Sürü Mantık Node'u"] -->|Ofset & Yaw Hesapla| Setpoints;
-    Setpoints["Konum Referansları (x,y,z,yaw)"] -->|/mavros/setpoint_position/local| MAVROS;
-    MAVROS -->|Mavlink| ArduPilot;
-    ArduPilot -->|Motor Komutu| Gazebo;
+    User["Kullanıcı / parametre güncellemesi"] -->|lider hedefi| SwarmNode;
+    SwarmNode["swarm_position_triangle"] -->|ofset ve yaw hesabı| Setpoints;
+    Setpoints["Konum hedefleri (x, y, z, yaw)"] -->|/droneN/mavros/setpoint_position/local| MAVROS;
+    MAVROS -->|MAVLink| ArduPilot;
+    ArduPilot -->|motor komutları| Gazebo;
 ```
 
-### 3. Özellikler
+## Nasıl çalışır
 
-Lider-Takipçi Formasyonu: 1. Drone lider olarak hareket eder; 2. ve 3. Drone'lar liderin referans sistemine göre üçgen formasyonunu korur.
+- `drone1` lider. `drone2` ve `drone3`, liderin yönelimine göre döndürülen ofsetlerle üçgenin diğer köşelerinde
+  durur, yani formasyon lider döndükçe onunla birlikte döner.
+- Hedef noktalar arasında en az `min_dist` mesafe kalması için hedefler birbirinden itilir (potansiyel alana benzer
+  basit bir itme).
+- Liderin hedefi `~leader_goal` parametresinden her döngüde yeniden okunur; düğüm çalışırken değiştirilebilir.
+- Kalkış betiği her drone'u GUIDED moda alır, arm eder ve 10 m'ye kaldırır.
 
-Sapma (Yaw) Duyarlı Konumlandırma: Formasyon, liderin yönelimine (heading) göre dinamik olarak döner.
+| Parametre | Varsayılan | Açıklama |
+|---|---|---|
+| `~leader_goal` | `[20.0, 0.0, 6.0]` | liderin hedefi (x, y, z) |
+| `~d` | `1.8` | lider ile takipçiler arası mesafe (m) |
+| `~min_dist` | `1.2` | hedefler arası en küçük mesafe (m) |
+| `~rep_k` | `0.7` | itme katsayısı |
+| `~rate_hz` | `20.0` | yayın frekansı |
+| `~leader_yaw_mode` | `face_goal` | `face_goal` ya da `hold` |
+| `~follower_yaw_mode` | `follow_leader` | `follow_leader` ya da `face_leader_goal` |
 
-Çarpışma Önleme (Hedef Uzayı): Hedef noktaların çakışmasını önlemek için swarm_position_triangle.py içinde potansiyel alan benzeri (potential field-like) bir itme kuvveti uygulanır.
+## Kurulum
 
-Çevrimiçi (Online) Kontrol: Hedef noktaları, node'ları yeniden başlatmaya gerek kalmadan ROS parametreleri üzerinden gerçek zamanlı güncellenebilir.
-
-Otomatik Durum Makinesi: Otomatik "arm" etme, mod değiştirme (GUIDED) ve kalkış için hazır scriptler içerir.
-
-### 4. Kurulum ve Ön Gereksinimler
-
-### Gereksinimler
-
-* Ubuntu 20.04
-* ROS Noetic
-* ArduPilot (SITL) & MAVROS
-* Gazebo
-
-Kurulum
+Gereksinimler: Ubuntu 20.04, ROS Noetic, Gazebo, ArduPilot SITL (`~/ardupilot` altında) ve MAVROS.
 
 ```bash
 source /opt/ros/noetic/setup.bash
-
-cd ~/multi_drone_control_ws/src
-git clone <your-repo-url>
-
+git clone https://github.com/umranmeryemkarabakal/multi_drone_control_ws.git ~/multi_drone_control_ws
 cd ~/multi_drone_control_ws
 catkin_make
 source devel/setup.bash
 ```
 
-## 5. Kullanım
-
-#### Adım 1: Simülasyon Dünyasını Başlatın Pist ortamını yükler ve 3 drone oluşturur.
+## Çalıştırma
 
 ```bash
+# 1. Gazebo: pist ve üç drone
 roslaunch multi_drone multi_drone_runway.launch
-```
 
-#### Adım 2: ArduPilot SITL Örneklerini Başlatın Drone'ları kontrol etmek için 3 ayrı ArduCopter SITL örneğini (port 14551, 14552, 14553) başlatır.
-
-```bash
+# 2. Üç ArduCopter SITL örneği (UDP 14551, 14552, 14553)
 ./src/multi_drone/scripts/multi_drone_startsitl.sh
-```
 
-#### Adım 3: MAVROS'u ArduPilot'a Bağlayın 3 örnek için de MAVLink bağlantılarını kurar.
-
-```bash
+# 3. Üç MAVROS bağlantısı (drone1, drone2, drone3 ad alanları)
 roslaunch multi_drone multi_drone_apm.launch
-```
 
-#### Adım 4: Arm ve Kalkış Motorları "arm" eder ve tüm drone'lara 10 metrede asılı kalma (hover) komutu verir.
-
-```bash
+# 4. Arm ve 10 m'ye kalkış
 rosrun multi_drone multi_drone_takeoff.py
-```
 
-#### Adım 5: Sürü Kontrolcüsünü Başlatın Formasyon mantığını etkinleştirir. Drone'lar formasyon noktalarına hareket edecektir.
-
-```bash
+# 5. Formasyon kontrolü
 rosrun multi_drone swarm_position_triangle.py _leader_goal:="[20.0, 0.0, 6.0]"
-```
 
-#### Adım 6: Hedefleri Anlık Güncelleyin Sürüyü hareket ettirmek için, yeni bir terminalde liderin hedef parametresini güncelleyin:
-
-```bash
+# 6. Uçarken yeni hedef
 rosparam set /swarm_position_triangle/leader_goal "[40.0, 10.0, 8.0]"
+
+# İniş
+rosrun multi_drone multi_drone_landing.py
 ```
 
-### 6. Çalışma Alanı
+## Dosya yapısı
 
+```text
 multi_drone_control_ws/
-├── src/
-│   └── multi_drone/
-│       ├── launch/
-│       │   ├── multi_drone_apm.launch
-│       │   └── multi_drone_runway.launch
-│       ├── models/
-│       └── src/
-│           ├── multi_drone_takeoff.py
-│           ├── multi_drone_landing.py
-│           └── swarm_position_triangle.py
-
-### 7. Referanslar ve İlham Kaynağı
-
-Makale: Hoenig, W., & Ayanian, N. (2017). Distributed Multi-Robot Navigation Using the ROS Framework. ROSCon 2017.
-
-Bu çalışma alanı, makaledeki sanal yapı konseptlerini bir MAVROS ortamına uyarlar.
-
-### 8. Yazar
-
-Ümran Meryem Karabakal Elektrik-Elektronik Mühendisliği Odak Alanları: Robotik, İHA'lar, Sürü Sistemleri, ROS
+└── src/multi_drone/
+    ├── launch/
+    │   ├── multi_drone_runway.launch        Gazebo dünyası ve üç drone
+    │   ├── multi_drone_apm.launch           üç MAVROS örneği
+    │   └── multi_drone_takeoff_landing.launch
+    ├── models/drone1, drone2, drone3/
+    ├── scripts/multi_drone_startsitl.sh     üç SITL örneğini açar
+    ├── src/
+    │   ├── swarm_position_triangle.py       formasyon kontrolü
+    │   ├── multi_drone_takeoff.py
+    │   ├── multi_drone_landing.py
+    │   ├── multi_drone_go_to_goal.py
+    │   └── sleep_node.py
+    └── worlds/multi_drone_runway.world
+```
