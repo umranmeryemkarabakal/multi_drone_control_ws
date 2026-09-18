@@ -8,13 +8,13 @@
   <img src="https://img.shields.io/badge/Gazebo-F58113?style=for-the-badge" alt="Gazebo" />
 </p>
 
-## 🇬🇧 Overview
+## Overview
 
 A ROS Noetic workspace for leader–follower formation control of three drones with MAVROS, ArduPilot SITL and Gazebo. The swarm layer generates position setpoints instead of raw velocity commands, which keeps the flight controller in charge of the dynamics.
 
 **Quick start:** `roslaunch multi_drone multi_drone_runway.launch`
 
-## 🇹🇷 Proje hakkında
+## Proje hakkında
 
 ## 1. Genel Bakış
 
